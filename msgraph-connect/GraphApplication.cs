@@ -31,9 +31,13 @@ namespace msgraph_connect
 
         private Uri graphUri;
         private Uri loginAuthority;
-        private Guid appId;
 
         private IPublicClientApplication app;
+
+        public Guid AppId {
+            get;
+            private set;
+        }
 
         public GraphApplication(Uri graphUri, Uri loginUri, string appId = null)
         {
@@ -48,12 +52,12 @@ namespace msgraph_connect
 
             var targetAppId = appId;
 
-            if ( targetAppId == null )
+            if ( targetAppId == null || targetAppId.Length == 0 )
             {
                 targetAppId = GraphApplication.defaultAppId;
             }
 
-            this.appId = new Guid(targetAppId);
+            this.AppId = new Guid(targetAppId);
         }
 
         public AuthenticationResult GetAccessToken(string[] permissions)
@@ -67,7 +71,7 @@ namespace msgraph_connect
         {
             if ( this.app == null )
             {
-                this.app = PublicClientApplicationBuilder.Create(this.appId.ToString()).WithAuthority(this.loginAuthority.ToString()).Build();
+                this.app = PublicClientApplicationBuilder.Create(this.AppId.ToString()).WithAuthority(this.loginAuthority.ToString()).Build();
             }
 
             var existingAccount = await GetExistingAccountAsync();

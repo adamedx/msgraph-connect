@@ -24,33 +24,67 @@ namespace msgraph_connect
 {
     public class GraphConnection
     {
-        private Uri graphUri;
-        private string apiVersion;
-        private Uri loginUri;
-        private string[] permissions;
-        private string appId;
-
         private GraphApplication app;
         private HttpClient graphClient;
+        private string appId;
+
+        public Uri GraphUri
+        {
+            get;
+            private set;
+        }
+
+        public string ApiVersion
+        {
+            get;
+            private set;
+        }
+
+        public Uri LoginUri
+        {
+            get;
+            private set;
+        }
+
+        public string[] Permissions
+        {
+            get;
+            private set;
+        }
+
+        public string AppId
+        {
+            get
+            {
+                string appId = null;
+
+                if ( this.app != null )
+                {
+                    appId = this.app.AppId.ToString();
+                }
+
+                return appId;
+            }
+        }
 
         public GraphConnection(string[] permissions = null, string graphUri = "https://graph.microsoft.com", string loginUri = "https://login.microsoftonline.com", string apiVersion = "v1.0", string appId = null)
         {
-            this.permissions = permissions;
+            this.Permissions = permissions;
             this.appId = appId;
-            this.graphUri = new Uri(graphUri);
-            this.loginUri = new Uri(loginUri);
-            this.apiVersion = apiVersion;
+            this.GraphUri = new Uri(graphUri);
+            this.LoginUri = new Uri(loginUri);
+            this.ApiVersion = apiVersion;
         }
 
         public void Connect()
         {
             if ( this.app == null )
             {
-                this.app = new GraphApplication(this.graphUri, this.loginUri, this.appId);
+                this.app = new GraphApplication(this.GraphUri, this.LoginUri, this.appId);
 
                 var authenticationProvider = new DelegateAuthenticationProvider(
                     (requestMessage) => {
-                        var authenticationResult = this.app.GetAccessToken(this.permissions);
+                        var authenticationResult = this.app.GetAccessToken(this.Permissions);
 
                         requestMessage
                         .Headers
@@ -59,7 +93,7 @@ namespace msgraph_connect
                         return Task.FromResult(0);
                     });
 
-                this.graphClient = GraphClientFactory.Create(authenticationProvider, this.apiVersion, GraphClientFactory.Global_Cloud, null, null);
+                this.graphClient = GraphClientFactory.Create(authenticationProvider, this.ApiVersion, GraphClientFactory.Global_Cloud, null, null);
             }
         }
 

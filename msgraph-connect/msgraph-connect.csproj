@@ -17,17 +17,13 @@ limitations under the License.
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
+    <TargetFramework>net45</TargetFramework>
     <RootNamespace>msgraph_connect</RootNamespace>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Graph.Core" Version="1.21.0" />
     <PackageReference Include="Microsoft.Identity.Client" Version="4.17.1" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <None Update="Invoke-MSGraphAPI.ps1" CopyToOutputDirectory="Always" />
   </ItemGroup>
 
 </Project>

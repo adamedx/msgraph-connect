@@ -4,6 +4,7 @@
    // For further information visit https://github.com/OmniSharp/omnisharp-vscode/blob/master/debugger-launchjson.md
    "version": "0.2.0",
    "configurations": [
+
         {
             "name": ".NET Core Launch (console)",
             "type": "coreclr",
@@ -13,6 +14,19 @@
             "program": "${workspaceFolder}/graphcom/bin/Debug/netcoreapp3.1/graphcom.dll",
             "args": ["me"],
             "cwd": "${workspaceFolder}/graphcom",
+            // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
+            "console": "internalConsole",
+            "stopAtEntry": false
+        },
+        {
+            "name": "pwsh .NET Core Launch (console)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            // If you have changed target frameworks, make sure to update the program path.
+            "program": "${workspaceFolder}/graphcom/bin/Debug/netcoreapp3.1/graphcom.dll",
+            "args": ["me"],
+            "cwd": "powershell.exe -noprofile -command \". ${workspaceFolder}/msgraph-connect/bin/Debug/netstandard2.0/Invoke-MSGraphAPI\";Invoke-MSGraphAPI me",
             // For more information about the 'console' field, see https://aka.ms/VSCode-CS-LaunchJson-Console
             "console": "internalConsole",
             "stopAtEntry": false

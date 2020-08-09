@@ -25,7 +25,7 @@ function Invoke-MSGraphAPI {
         [string] $Method = 'GET',
 
         [parameter(parametersetname='simple')]
-        [string] $Version = '1.0',
+        [string] $Version = 'v1.0',
 
         [parameter(parametersetname='simple')]
         [Uri] $GraphUri = 'https://graph.microsoft.com',
@@ -43,6 +43,8 @@ function Invoke-MSGraphAPI {
 
         [switch] $RawContent,
 
+        [switch] $IgnoreHttpErrors,
+
         [parameter(parametersetname='connection', mandatory=$true)]
         [msgraph_connect.GraphConnection] $Connection
     )
@@ -57,16 +59,19 @@ function Invoke-MSGraphAPI {
         [msgraph_connect.GraphConnection]::new($Permissions, $GraphUri, $LoginUri, $Version, $targetAppId)
     }
 
-    write-host $uri, $method
-
-    $graphConnection | fl * | out-host
     $response = $graphConnection.InvokeRequest($Uri, $Method)
+    $content = $response.Content.ReadAsStringAsync().Result
 
-    $global:mycon = $graphConnection
-    if ( $FullResponse.IsPresent ) {
-        $response
+    $isFailure = ( $response.StatusCode -lt 200 -or $response.StatusCode -ge 300 )
+
+    if ( $isFailure -and $ErrorActionPreference -notin 'SilentlyContinue', 'Ignore' -and ! $IgnoreHttpErrors.IsPresent ) {
+        write-error "Request failed with status '$($response.StatusCode)'\n$content"
+    } elseif ( $FullResponse.IsPresent ) {
+        [PSCustomObject] @{
+            Response = $response
+            Content = $content
+        }
     } else {
-        $content = $response.Content
         if ( $RawContent.IsPresent ) {
             $content
         } else {
@@ -78,7 +83,7 @@ function Invoke-MSGraphAPI {
 function Connect-MSGraphAPI {
     [cmdletbinding(positionalbinding=0)]
     param(
-        [string] $Version,
+        [string] $Version = 'v1.0',
 
         [Uri] $GraphUri = 'https://graph.microsoft.com',
 

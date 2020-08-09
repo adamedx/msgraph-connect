@@ -22,7 +22,18 @@ limitations under the License.
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net45</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <PowerShellScripts Include="$(MSBuildProjectDirectory)\Invoke-MSGraphAPI.ps1"/>
+  </ItemGroup>
+
+  <Target Name="CopyScripts" AfterTargets="Build">
+    <Copy
+        SourceFiles="@(PowerShellScripts)"
+        DestinationFolder="$(OutDir)"
+    />
+  </Target>
 
 </Project>
