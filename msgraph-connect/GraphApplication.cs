@@ -19,7 +19,6 @@ using Microsoft.Identity.Client;
 
 namespace msgraph_connect
 {
-
     class GraphApplication
     {
         private static string defaultAppId = "53316905-a6e5-46ed-b0c9-524a2379579e";
@@ -71,16 +70,7 @@ namespace msgraph_connect
                 this.app = PublicClientApplicationBuilder.Create(this.appId.ToString()).WithAuthority(this.loginAuthority.ToString()).Build();
             }
 
-            var accounts = await this.app.GetAccountsAsync();
-
-            IAccount existingAccount = null;
-
-            var enumerator = accounts.GetEnumerator();
-            if ( enumerator.MoveNext() )
-            {
-                existingAccount = enumerator.Current;
-            }
-
+            var existingAccount = await GetExistingAccountAsync();
             var scopedPermissions = GetScopedPermissions(this.graphUri, permissions);
 
             AuthenticationResult result;
@@ -169,6 +159,21 @@ namespace msgraph_connect
         private bool IsDefaultLoginHost(Uri loginUri)
         {
             return loginUri.Host == GraphApplication.defaultLoginHost;
+        }
+
+        private async Task<IAccount> GetExistingAccountAsync()
+        {
+            var accounts = await this.app.GetAccountsAsync();
+
+            IAccount existingAccount = null;
+
+            var enumerator = accounts.GetEnumerator();
+            if ( enumerator.MoveNext() )
+            {
+                existingAccount = enumerator.Current;
+            }
+
+            return existingAccount;
         }
     }
 }

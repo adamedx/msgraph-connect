@@ -22,27 +22,6 @@ using Microsoft.Identity.Client;
 
 namespace msgraph_connect
 {
-    public class GraphHttpException : Exception
-    {
-        public GraphHttpException(int statusCode, string message, HttpResponseHeaders headers) : base(message)
-        {
-            this.StatusCode = statusCode;
-            this.Headers = headers;
-        }
-
-        public int StatusCode
-        {
-            get;
-            private set;
-        }
-
-        public HttpResponseHeaders Headers
-        {
-            get;
-            private set;
-        }
-    }
-
     public class GraphConnection
     {
         private Uri graphUri;
@@ -75,7 +54,7 @@ namespace msgraph_connect
 
                         requestMessage
                         .Headers
-                        .Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", authenticationResult.AccessToken);
+                        .Authorization = new AuthenticationHeaderValue("Bearer", authenticationResult.AccessToken);
 
                         return Task.FromResult(0);
                     });
