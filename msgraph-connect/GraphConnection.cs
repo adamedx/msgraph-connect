@@ -24,17 +24,20 @@ namespace msgraph_connect
 {
     public class GraphHttpException : Exception
     {
-        public GraphHttpException(int statusCode, string message, HttpResponseHeaders headers) : base(message) {
+        public GraphHttpException(int statusCode, string message, HttpResponseHeaders headers) : base(message)
+        {
             this.StatusCode = statusCode;
             this.Headers = headers;
         }
 
-        public int StatusCode {
+        public int StatusCode
+        {
             get;
             private set;
         }
 
-        public HttpResponseHeaders Headers {
+        public HttpResponseHeaders Headers
+        {
             get;
             private set;
         }
@@ -42,47 +45,33 @@ namespace msgraph_connect
 
     public class GraphConnection
     {
-        private static string defaultAppId = "53316905-a6e5-46ed-b0c9-524a2379579e";
-        private static string defaultGraphHost = "graph.microsoft.com";
-        private static string defaultGraphUri = $"https://{defaultGraphHost}";
-
-        private static string defaultLoginHost = "login.microsoftonline.com";
-        private static string defaultLoginUri = $"{defaultLoginHost}";
-
         private Uri graphUri;
         private string apiVersion;
-        private Uri loginAuthority;
-        private IEnumerable<string> scopedPermissions;
-        private Guid appId;
+        private Uri loginUri;
+        private string[] permissions;
+        private string appId;
 
-        private IPublicClientApplication app;
+        private GraphApplication app;
         private HttpClient graphClient;
 
         public GraphConnection(string[] permissions = null, string graphUri = "https://graph.microsoft.com", string loginUri = "https://login.microsoftonline.com", string apiVersion = "v1.0", string appId = null)
         {
+            this.permissions = permissions;
+            this.appId = appId;
             this.graphUri = new Uri(graphUri);
+            this.loginUri = new Uri(loginUri);
             this.apiVersion = apiVersion;
-            this.loginAuthority = GetLoginAuthority(new Uri(loginUri));
-            this.scopedPermissions = GetScopedPermissions(this.graphUri, permissions);
-
-            var targetAppId = appId;
-
-            if ( targetAppId == null )
-            {
-                targetAppId = GraphConnection.defaultAppId;
-            }
-
-            this.appId = new Guid(targetAppId);
         }
 
         public void Connect()
         {
-            if ( this.app == null ) {
-                var app = PublicClientApplicationBuilder.Create(this.appId.ToString()).WithAuthority(this.loginAuthority.ToString()).Build();
+            if ( this.app == null )
+            {
+                this.app = new GraphApplication(this.graphUri, this.loginUri, this.appId);
 
                 var authenticationProvider = new DelegateAuthenticationProvider(
                     (requestMessage) => {
-                        var authenticationResult = GetAccessToken();
+                        var authenticationResult = this.app.GetAccessToken(this.permissions);
 
                         requestMessage
                         .Headers
@@ -92,7 +81,6 @@ namespace msgraph_connect
                     });
 
                 this.graphClient = GraphClientFactory.Create(authenticationProvider, this.apiVersion, GraphClientFactory.Global_Cloud, null, null);
-                this.app = app;
             }
         }
 
@@ -100,45 +88,6 @@ namespace msgraph_connect
         {
             this.app = null;
             this.graphClient = null;
-        }
-
-        public AuthenticationResult GetAccessToken()
-        {
-            var task = GetAccessTokenAsync();
-
-            return task.Result;
-        }
-
-        public async Task<AuthenticationResult> GetAccessTokenAsync()
-        {
-            var accounts = await this.app.GetAccountsAsync();
-
-            IAccount existingAccount = null;
-
-            var enumerator = accounts.GetEnumerator();
-            if ( enumerator.MoveNext() )
-            {
-                existingAccount = enumerator.Current;
-            }
-
-            AuthenticationResult result;
-
-            try
-            {
-                result = await this.app.AcquireTokenSilent(this.scopedPermissions, existingAccount)
-                    .ExecuteAsync();
-            }
-            catch ( MsalUiRequiredException )
-            {
-                result = await this.app.AcquireTokenWithDeviceCode(this.scopedPermissions,
-                                                                   deviceCodeResult =>
-                    {
-                        Console.WriteLine(deviceCodeResult.Message);
-                        return Task.FromResult(0);
-                    }).ExecuteAsync();
-            }
-
-            return result;
         }
 
         public async Task<HttpResponseMessage> InvokeRequestAsync(string relativeUri, string method = "GET")
@@ -168,70 +117,5 @@ namespace msgraph_connect
                 throw new GraphHttpException((int) response.StatusCode, content, response.Headers);
             }
         }
-
-        private Uri GetLoginAuthority(Uri loginUri)
-        {
-            var tenantScope = "";
-            var suffix = "";
-
-            if ( ( loginUri.Segments != null ) &&
-                 ( ( loginUri.Segments.Length < 2 ) ||
-                   ( loginUri.Segments.Length == 2 && loginUri.Segments[0] == "/" ) ) )
-            {
-                suffix = "/oauth2/v2.0";
-
-                tenantScope = "/common";
-
-                if ( loginUri.Host != GraphConnection.defaultLoginHost )
-                {
-                    tenantScope = "/organizations";
-                }
-            }
-
-            var authorityUri = new Uri($"https://{loginUri.Host}{tenantScope}{suffix}");
-
-            return authorityUri;
-        }
-
-        private IEnumerable<string> GetScopedPermissions(Uri resourceUri, string[] permissions = null)
-        {
-            var scopedPermissions = new SortedList<string,string>();
-
-            // scopedPermissions.Add(".default", ".default");
-
-            bool isDefaultGraphHost = IsPublicGraphHost( resourceUri );
-
-            string resourceString = resourceUri.ToString().TrimEnd('/');
-
-            if ( permissions != null )
-            {
-                foreach ( var permission in permissions )
-                {
-                    var scopedPermission = permission;
-
-                    switch ( permission ) {
-                    case "openid":
-                    case "profile":
-                    case "offline_access":
-                        continue;
-                    }
-
-                    if ( isDefaultGraphHost && ! scopedPermissions.ContainsKey( permission ) )
-                    {
-                        scopedPermission = $"{resourceString}/{permission}";
-                    }
-
-                    scopedPermissions.Add(permission, scopedPermission);
-                }
-            }
-
-            return scopedPermissions.Values;
-        }
-
-        private bool IsPublicGraphHost(Uri graphUri)
-        {
-            return graphUri.Host == GraphConnection.defaultGraphHost;
-        }
-
     }
 }
